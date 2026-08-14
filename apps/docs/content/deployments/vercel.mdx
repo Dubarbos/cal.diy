@@ -2,74 +2,66 @@
 
 ## Requirements
 
-Currently Vercel Pro Plan is required to be able to Deploy this application with Vercel, due to limitations on the number of serverless functions on the free plan.
+Currently Vercel Pro Plan is required to be able to Deploy this application with Vercel, due to limitations on the number of serverless functions and Cron Jobs on the free plan.
 
-You need a PostgresDB database hosted somewhere. [Supabase](https://supabase.com) offer a great free option while [Heroku](https://heroku.com) offers a low-cost option.
+You need a Postgres database hosted somewhere. [Supabase](https://supabase.com) offers a great free option.
 
-## One Click Deployment
+## Deployment
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/calcom/cal.diy)
+### 1. Create a Supabase project
 
-## Manual Deployment
+1. Create a new project at [supabase.com](https://supabase.com).
+2. Go to **Project Settings > Database > Connection string** and copy two connection strings:
+   - **Transaction pooler** (port `6543`) → this becomes `DATABASE_URL`.
+   - **Direct connection** (port `5432`) → this becomes `DATABASE_DIRECT_URL` (used only for running migrations, which don't work through the pooler).
 
-### Local settings
-
-1. **Fork and clone the repository**
+### 2. Fork and clone the repository
 
 ```bash
 git clone https://github.com/<<your-fork>>/cal.diy.git
 ```
 
-2. **Set environment variables**
+### 3. Set environment variables
 
-Copy the `.env.example` file in `apps/web`, rename it to `.env` and fill it with your settings (See [manual setup](/installation) and Obtaining the Google API Credentials)
+Copy `.env.example` at the repo root to `.env` and fill it in. At minimum you need:
 
-3. **Install packages with yarn**
+- `DATABASE_URL` / `DATABASE_DIRECT_URL` — from step 1.
+- `NEXT_PUBLIC_WEBAPP_URL` / `NEXTAUTH_URL` — your Vercel deployment URL (e.g. `https://your-app.vercel.app`), both should match.
+- `NEXTAUTH_SECRET` — generate with `openssl rand -base64 32`.
+- `CALENDSO_ENCRYPTION_KEY` — generate with `openssl rand -base64 24`.
+- `CRON_API_KEY` — generate with `openssl rand -hex 16`.
+- `CRON_SECRET` — generate with `openssl rand -hex 16`. Set this **as a Vercel Environment Variable** too — Vercel automatically sends it as a bearer token when it triggers the scheduled routes defined in `apps/web/vercel.json`, which is what actually authenticates Vercel's Cron Jobs.
+
+See [manual setup](/installation) for the rest of the optional integrations (email, calendars, video, etc).
+
+### 4. Install packages and set up the database
 
 ```bash
 yarn install
-```
-
-4. **Set up the database using the Prisma schema**
-
-Schema is located in at `packages/prisma/schema.prisma`.
-
-```bash
 yarn workspace @calcom/prisma db-deploy
 ```
 
-5. **Open Prisma Studio**
+`db-deploy` runs Prisma migrations against `DATABASE_DIRECT_URL`.
 
-To look at or modify the database content
+### 5. Create your first user
 
 ```bash
 yarn db-studio
 ```
 
-6. **Open User model**
+Open the `User` model, add a new record (encrypt the password with [BCrypt](https://bcrypt-generator.com/) first), and save it.
 
-Click on the `User` model to add a new user record.
+### 6. Deploy to Vercel
 
-7. **Create new user**
+1. Create a new project on Vercel and import your forked repository.
+2. Set **Root Directory** to `apps/web`.
+3. Add the environment variables from step 3 (Production + Preview as needed).
+4. Deploy.
 
-Fill out the fields (remembering to encrypt your password with [BCrypt](https://bcrypt-generator.com/)) and click `Save 1 Record` to create your first user.
+Build command, install command, function timeouts, and the Cron Jobs schedule are already committed in [`apps/web/vercel.json`](https://github.com/calcom/cal.diy/blob/main/apps/web/vercel.json), so you shouldn't need to override anything manually in the dashboard. It wires up the following scheduled routes (all under `/api/cron/*`): booking reminders, webhook triggers, travel-schedule timezone changes, calendar cache subscriptions/cleanup, selected-calendars sync, and app metadata sync.
 
-8. **Login**
+> If `yarn install` fails during the Vercel build with an immutable-lockfile error, add `YARN_ENABLE_IMMUTABLE_INSTALLS=false` as an environment variable.
 
-Open a browser to port 3000 on your localhost and login with your just created, first user.
+### One Click Deployment
 
-> Sometimes, yarn install might fail during deployment on Vercel, in which case, you can use `YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn install` as the install command instead.
-
-#### Deployment
-
-1. Create a new project on Vercel
-2. Import from your forked repository
-3. Set the Environment Variables
-4. Set the root directory to `apps/web`
-5. Override the build command to:
-
-```bash
-cd ../.. && yarn build --include-dependencies --no-deps
-```
-
-6. Hit Deploy
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/calcom/cal.diy)

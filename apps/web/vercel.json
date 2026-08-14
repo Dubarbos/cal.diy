@@ -1,4 +1,6 @@
 {
+  "buildCommand": "cd ../.. && yarn build --include-dependencies --no-deps",
+  "installCommand": "cd ../.. && yarn install",
   "crons": [
     {
       "path": "/api/cron/calendar-subscriptions",
@@ -27,7 +29,36 @@
     {
       "path": "/api/cron/selected-calendars",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/bookingReminder",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/webhookTriggers",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/changeTimeZone",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/syncAppMeta",
+      "schedule": "0 4 * * *"
     }
   ],
-  "functions": {}
+  "functions": {
+    "app/api/cron/**/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/tasks/**/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/video/**/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/recorded-daily-video/route.ts": {
+      "maxDuration": 60
+    }
+  }
 }

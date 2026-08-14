@@ -8,7 +8,7 @@ import prisma from "@calcom/prisma";
 async function postHandler(req: NextRequest) {
   const apiKey = req.headers.get("authorization") || req.nextUrl.searchParams.get("apiKey");
 
-  if (process.env.CRON_API_KEY !== apiKey) {
+  if (![process.env.CRON_API_KEY, `Bearer ${process.env.CRON_SECRET}`].includes(`${apiKey}`)) {
     return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
   }
 
@@ -18,3 +18,5 @@ async function postHandler(req: NextRequest) {
 }
 
 export const POST = defaultResponderForAppDir(postHandler);
+// Vercel Cron Jobs only trigger via GET, so alias it to the same handler.
+export const GET = defaultResponderForAppDir(postHandler);
