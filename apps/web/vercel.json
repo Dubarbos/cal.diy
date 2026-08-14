@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd ../.. && corepack enable && yarn build --include-dependencies --no-deps",
+  "buildCommand": "cd ../.. && corepack enable && yarn build",
   "installCommand": "cd ../.. && corepack enable && yarn install",
   "functions": {
     "app/api/cron/**/route.ts": {
