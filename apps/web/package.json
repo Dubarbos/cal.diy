@@ -2,6 +2,7 @@
   "name": "@calcom/web",
   "version": "6.2.0",
   "private": true,
+  "packageManager": "yarn@4.12.0",
   "scripts": {
     "analyze": "ANALYZE=true next build",
     "analyze:server": "BUNDLE_ANALYZE=server next build",
