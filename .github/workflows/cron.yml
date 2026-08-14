@@ -1,0 +1,50 @@
+name: Cal.com cron jobs
+
+# Vercel Hobby plan only allows once-a-day Cron Jobs, so the app's cron
+# routes (apps/web/app/api/cron/**, apps/web/app/api/tasks/**) are instead
+# triggered from here on a schedule, authenticated the same way Vercel's
+# own Cron Jobs would authenticate: Authorization: Bearer $CRON_SECRET.
+
+on:
+  schedule:
+    # Frequent: calendar sync, webhook triggers, booking reminders, tasker queue
+    - cron: "*/5 * * * *"
+    # Hourly: travel-schedule timezone changes
+    - cron: "0 * * * *"
+    # Daily: calendar cache cleanup, app metadata sync, tasker cleanup
+    - cron: "0 3 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  frequent:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '*/5 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: calendar-subscriptions
+        run: curl -fsS -X GET -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.PROD_URL }}/api/cron/calendar-subscriptions"
+      - name: selected-calendars
+        run: curl -fsS -X GET -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.PROD_URL }}/api/cron/selected-calendars"
+      - name: webhookTriggers
+        run: curl -fsS -X GET -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.PROD_URL }}/api/cron/webhookTriggers"
+      - name: bookingReminder
+        run: curl -fsS -X GET -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.PROD_URL }}/api/cron/bookingReminder"
+      - name: tasks/cron
+        run: curl -fsS -X GET -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.PROD_URL }}/api/tasks/cron"
+
+  hourly:
+    if: github.event.schedule == '0 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: changeTimeZone
+        run: curl -fsS -X GET -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.PROD_URL }}/api/cron/changeTimeZone"
+
+  daily:
+    if: github.event.schedule == '0 3 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: calendar-subscriptions-cleanup
+        run: curl -fsS -X GET -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.PROD_URL }}/api/cron/calendar-subscriptions-cleanup"
+      - name: syncAppMeta
+        run: curl -fsS -X GET -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.PROD_URL }}/api/cron/syncAppMeta"
+      - name: tasks/cleanup
+        run: curl -fsS -X GET -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.PROD_URL }}/api/tasks/cleanup"
