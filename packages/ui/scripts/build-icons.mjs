@@ -135,7 +135,14 @@ async function writeIfChanged(filepath, newContent) {
     .catch(() => "");
   if (currentContent === newContent) return false;
   await fsExtra.writeFile(filepath, newContent, "utf8");
-  await $`node ${biomeBin} format --write ${filepath}`;
+  try {
+    await $`node ${biomeBin} format --write ${filepath}`;
+  } catch {
+    // biome.json excludes everything under public/ (where sprite.svg lives), so biome
+    // exits non-zero there with "no files were processed" - there's simply nothing to
+    // format. The unformatted content written above is still valid, so don't fail the build.
+    logVerbose(`Skipped biome formatting for ${filepath} (likely excluded by biome.json)`);
+  }
   return true;
 }
 
